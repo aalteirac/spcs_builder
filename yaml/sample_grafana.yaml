@@ -1,0 +1,8 @@
+spec:
+  containers:
+  - name: grafana
+    image: grafana/grafana
+  endpoints:
+  - name: ui
+    port: 3000
+    public: true

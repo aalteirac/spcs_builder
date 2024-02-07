@@ -1,0 +1,8 @@
+spec:
+  containers:
+  - name: ragcortex
+    image: rag_cortex
+  endpoints:
+  - name: ui
+    port: 8600
+    public: true

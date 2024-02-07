@@ -249,7 +249,7 @@ spcs_service='test_spcs_service'
 
 spcs_yaml_file='yaml/sample_grafana.yaml'
 spcs_docker_image='grafana/grafana'
-
+ 
 
 connect(admin_user,admin_pass,account,initalRole)
 try:

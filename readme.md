@@ -14,7 +14,7 @@ It creates all the necessary elements in a fresh Snowflake account so you can fo
 
 - A local docker image
 
-- The yaml file for running it in SPCS
+- [The yaml file for running it in SPCS](https://docs.snowflake.com/en/developer-guide/snowpark-container-services/specification-reference)
 
   
 

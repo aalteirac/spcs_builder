@@ -354,26 +354,3 @@ print(f'''Create SERVICE {res["status"].iloc[0]}''')
 ret=waitForEnpoints(cur,spcs_service)
 print(ret)
 
-
-# spcs_yaml_file='yaml/sample_cortex.yaml'
-# spcs_docker_image='rag_cortex'
-
-# res=createService(cur,spcs_service,spcs_pool,spcs_integration,spcs_st,spcs_yaml_file)
-# print(f'''Create SERVICE {res["status"].iloc[0]}''')
-# DROP DB OPTION with current role
-
-# TEST
-# connect(spcs_usr,spcs_usr_pass,'kl70905.eu-central-1',spcs_role)
-# res=getRegistry(cur,spcs_db+'.'+spcs_sc,spcs_repo)
-# spcs_url=res["repository_url"].iloc[0]
-# ret=readYaml(spcs_yaml_file)
-# ret=completeSpecImageName(ret,spcs_url)
-# print(ret)
-# connect(spcs_usr,spcs_usr_pass,'kl70905.eu-central-1',spcs_role)
-# setContext(cur,spcs_db,spcs_sc)
-# res=createService(cur,spcs_service,spcs_pool,spcs_integration,spcs_st,'sample.yaml')
-# print(res)
-# ret=waitForEnpoints(cur,spcs_service)
-# print(ret)
-# sys.exit(0)
-# TEST

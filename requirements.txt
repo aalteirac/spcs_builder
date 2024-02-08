@@ -1,3 +1,2 @@
 snowflake-connector-python[pandas]
 snowflake-connector-python==3.4.1
-streamlit==1.28.1

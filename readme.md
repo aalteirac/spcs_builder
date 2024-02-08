@@ -44,7 +44,7 @@ It creates all the necessary elements in a fresh Snowflake account so you can fo
 
 - when enpoint is ready you can navigate to the url and login with the 'test_spcs_usr" user name and choosen password:
 
-![](sc1.png)
+![](img/sc1.png)
 
 ## What the script does for you?
 

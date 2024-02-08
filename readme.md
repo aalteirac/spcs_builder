@@ -83,3 +83,7 @@ It creates all the necessary elements in a fresh Snowflake account so you can fo
 - Create Service with yaml definition
 
 - Wait for endpoints to be ready
+
+## Example with Grafana image:
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/uPglNirhaxs/0.jpg)](https://www.youtube.com/watch?v=uPglNirhaxs)

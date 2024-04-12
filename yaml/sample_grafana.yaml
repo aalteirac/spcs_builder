@@ -3,6 +3,8 @@ spec:
   - name: grafana
     image: grafana/grafana
   endpoints:
-  - name: ui
+  - name: grafana
     port: 3000
     public: true
+
+

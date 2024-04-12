@@ -7,6 +7,28 @@ import os
 import sys
 import time
 
+app='GRAFANA'
+spcs_yaml_file='yaml/sample_grafana.yaml'
+spcs_docker_images=['grafana/grafana']
+
+# app='MARKET_PLACE'
+# spcs_yaml_file='yaml/spcs.yaml'
+# spcs_docker_images=['mkp']
+
+# app='WS_STREAMING'
+# spcs_yaml_file='yaml/wsstreamingspcs.yaml'
+# spcs_docker_images=['wsstreamingspcs']
+
+
+# app='egresstest'
+# spcs_yaml_file='yaml/egresstest.yaml'
+# spcs_docker_images=['egresstest']
+
+
+
+
+
+
 notReadyEndpointMessage='Endpoints provisioning in progress'
 
 def disconnect():
@@ -176,7 +198,19 @@ def createService(cursor,name,pool,integration,stage,spec,minn=1,maxn=1):
     ret=pd.DataFrame(ret)
     return ret  
 
+def alterServiceFromSpec(cursor,name,spec):
+    servcommand=f''' 
+ ALTER SERVICE {name} 
+ FROM SPECIFICATION $$
+ {spec}
+ $$
+'''           
+    ret=cursor.execute(servcommand).fetchall()
+    ret=pd.DataFrame(ret)
+    return ret  
+
 def waitForEnpoints(cur,service):
+
     global endpoints
     endpoints=[]
     done=True
@@ -203,9 +237,10 @@ def readYaml(file):
         contents = f.read()
         return contents
 
-def completeSpecImageName(yaml,url,version=0):
+def completeSpecImageName(yaml,url,imgs,version=0):
     repo=url.split("/",1)
-    yaml=yaml.replace(f'''image: {spcs_docker_image}''',f'''image: /{repo[1]}/{spcs_docker_image}:v{version}''')
+    for img in imgs:
+        yaml=yaml.replace(f'''image: {img}''',f'''image: /{repo[1]}/{img}:v{version}''')
     return yaml
 
 def loginDocker(url,user,passw):
@@ -227,7 +262,12 @@ def listDockerImages():
 
 
 
-
+type=sys.argv[1:][0]
+if type==[] or type not in['init','update']:
+    print (f'''Missing or invalid parameter... => {type}
+               for update: python main.py update 
+               for initial deployment: python main.py init''')
+    exit(0)
 
 
 initalRole='ACCOUNTADMIN'
@@ -235,122 +275,150 @@ account=accountname
 admin_user=adminuser
 admin_pass=adminpass
 spcs_egress='snowservices_ingress_oauth'.upper()
-spcs_db='test_spcs_db'.upper()
-spcs_sc='test_spcs_sc'.upper()
-spcs_st='test_spcs_stage'.upper()
-spcs_repo='test_spcs_repo'.upper()
-spcs_role='TEST_SPCS_ROLE'.upper()
+spcs_db=app+'_spcs_db'.upper()
+spcs_sc=app+'_spcs_sc'.upper()
+spcs_st=app+'_spcs_stage'.upper()
+spcs_repo=app+'_spcs_repo'.upper()
+spcs_role=app+'_SPCS_ROLE'.upper()
 spcs_usr='test_spcs_usr'.upper()
 spcs_usr_pass=spcs_user_pass
-spcs_net_rule='test_spcs_net_rule'.upper()
-spcs_integration='test_spcs_integration'.upper()
-spcs_pool='test_spcs_pool'
-spcs_service='test_spcs_service'
+spcs_net_rule=app+'_spcs_net_rule'.upper()
+spcs_integration=app.upper()+'_spcs_integration'.upper()
+spcs_pool=app+'_spcs_pool'
+spcs_service=app+'_spcs_service'
 
-spcs_yaml_file='yaml/sample_grafana.yaml'
-spcs_docker_image='grafana/grafana'
+
  
+if type=='init':
+    connect(admin_user,admin_pass,account,initalRole)
+    try:
+        res=transferOwner(cur,'DATABASE',spcs_db,initalRole)
+        print(f'''Transfering DB ownership {res["status"].iloc[0]}''')
 
-connect(admin_user,admin_pass,account,initalRole)
-try:
-    res=transferOwner(cur,'DATABASE',spcs_db,initalRole)
+        res=transferOwner(cur,'SCHEMA',spcs_db+"."+spcs_sc,initalRole)
+        print(f'''Transfering SCHEMA ownership {res["status"].iloc[0]}''')
+
+        res=transferOwner(cur,'STAGE',spcs_db+"."+spcs_sc+"."+spcs_st,initalRole)
+        print(f'''Transfering STAGE ownership {res["status"].iloc[0]}''')
+
+        res=transferOwner(cur,'IMAGE REPOSITORY',spcs_db+"."+spcs_sc+"."+spcs_repo,initalRole)
+        print(f'''Transfering IMAGE REPOSITORY ownership {res["status"].iloc[0]}''')
+    except:
+        print('Initial Objects not yet created...')
+
+    res=createEgress(cur,spcs_egress)
+    print(f'''Create EGRESS {res["status"].iloc[0]}''')
+
+    res=createRole(cur,spcs_role)
+    print(f'''Create ROLE {res["status"].iloc[0]}''')
+
+    res=createUser(cur,spcs_usr,spcs_usr_pass,spcs_role)
+    print(f'''Create USER {res["status"].iloc[0]}''')
+
+    res=grantRoleToUser(cur,spcs_role,spcs_usr)
+    print(f'''Grant ROLE TO USER {res["status"].iloc[0]}''')
+
+    res=grantBindToRole(cur,spcs_role)
+    print(f'''Grant BIND SERVICE TO ROLE {res["status"].iloc[0]}''')
+
+    res=createDB(cur,spcs_db)
+    print(f'''Create DB {res["status"].iloc[0]}''')
+
+    res=createSchema(cur,spcs_db,spcs_sc)
+    print(f'''Create SCHEMA {res["status"].iloc[0]}''')
+
+    res=setContext(cur,spcs_db,spcs_sc)
+    print(f'''Set Context {res["status"].iloc[0]}''')
+
+    res=createNetworkRule(cur,spcs_net_rule)
+    print(f'''Create NETWORK RULE {res["status"].iloc[0]}''')
+
+    res=createExternalInt(cur,spcs_integration,spcs_net_rule)
+    print(f'''Create EXTERNAL ACCESS {res["status"].iloc[0]}''')
+
+    res=grantIntegrationToRole(cur,spcs_integration,spcs_role)
+    print(f'''Grant INTEGRATION TO ROLE {res["status"].iloc[0]}''')
+
+    res=createStage(cur,spcs_db,spcs_sc,spcs_st)
+    print(f'''Create STAGE {res["status"].iloc[0]}''')
+
+    res=createRepo(cur,spcs_db,spcs_sc,spcs_repo)
+    print(f'''Create IMAGE REPOSITORY {res["status"].iloc[0]}''')
+
+    res=transferOwner(cur,'DATABASE',spcs_db,spcs_role)
     print(f'''Transfering DB ownership {res["status"].iloc[0]}''')
 
-    res=transferOwner(cur,'SCHEMA',spcs_db+"."+spcs_sc,initalRole)
+    res=transferOwner(cur,'SCHEMA',spcs_db+"."+spcs_sc,spcs_role)
     print(f'''Transfering SCHEMA ownership {res["status"].iloc[0]}''')
 
-    res=transferOwner(cur,'STAGE',spcs_db+"."+spcs_sc+"."+spcs_st,initalRole)
+    res=transferOwner(cur,'STAGE',spcs_db+"."+spcs_sc+"."+spcs_st,spcs_role)
     print(f'''Transfering STAGE ownership {res["status"].iloc[0]}''')
 
-    res=transferOwner(cur,'IMAGE REPOSITORY',spcs_db+"."+spcs_sc+"."+spcs_repo,initalRole)
+    res=transferOwner(cur,'IMAGE REPOSITORY',spcs_db+"."+spcs_sc+"."+spcs_repo,spcs_role)
     print(f'''Transfering IMAGE REPOSITORY ownership {res["status"].iloc[0]}''')
-except:
-    print('Initial Objects not yet created...')
 
-res=createEgress(cur,spcs_egress)
-print(f'''Create EGRESS {res["status"].iloc[0]}''')
+    res=createComputePool(cur,spcs_pool)
+    print(f'''Create COMPUTE POOL {res["status"].iloc[0]}''')
 
-res=createRole(cur,spcs_role)
-print(f'''Create ROLE {res["status"].iloc[0]}''')
+    res=grantPoolToRole(cur,spcs_pool,spcs_role)
+    print(f'''GRANT POOL USAGE TO ROLE {res["status"].iloc[0]}''')
 
-res=createUser(cur,spcs_usr,spcs_usr_pass,spcs_role)
-print(f'''Create USER {res["status"].iloc[0]}''')
+    disconnect()
 
-res=grantRoleToUser(cur,spcs_role,spcs_usr)
-print(f'''Grant ROLE TO USER {res["status"].iloc[0]}''')
+    print(f'''Switching USER connection...''')
 
-res=grantBindToRole(cur,spcs_role)
-print(f'''Grant BIND SERVICE TO ROLE {res["status"].iloc[0]}''')
+    connect(spcs_usr,spcs_usr_pass,account,spcs_role)
 
-res=createDB(cur,spcs_db)
-print(f'''Create DB {res["status"].iloc[0]}''')
+    res=setContext(cur,spcs_db,spcs_sc)
+    print(f'''Set Context {res["status"].iloc[0]}''')
 
-res=createSchema(cur,spcs_db,spcs_sc)
-print(f'''Create SCHEMA {res["status"].iloc[0]}''')
+    res=upload(cur,spcs_yaml_file,spcs_st)
+    print(f'''Uploading YAML...''')
 
-res=setContext(cur,spcs_db,spcs_sc)
-print(f'''Set Context {res["status"].iloc[0]}''')
+    res=getRegistry(cur,spcs_db+'.'+spcs_sc,spcs_repo)
+    spcs_url=res["repository_url"].iloc[0]
+    print(f'''Getting Repository URL {spcs_url}''')
 
-res=createNetworkRule(cur,spcs_net_rule)
-print(f'''Create NETWORK RULE {res["status"].iloc[0]}''')
+    loginDocker(spcs_url,spcs_usr,spcs_usr_pass)
+    for img in spcs_docker_images:   
+        tagImage(spcs_url,img)
+        pushImage(spcs_url,img)
+        
+    ret=readYaml(spcs_yaml_file)
+    spcs_yaml_content=completeSpecImageName(ret,spcs_url,spcs_docker_images)
+    print(f'''Qualifying Image name in YAML file...''')
+    # print(spcs_yaml_content)
 
-res=createExternalInt(cur,spcs_integration,spcs_net_rule)
-print(f'''Create EXTERNAL ACCESS {res["status"].iloc[0]}''')
+    res=createServiceFromSpec(cur,spcs_service,spcs_pool,spcs_integration,spcs_yaml_content)
+    print(f'''Create SERVICE {res["status"].iloc[0]}''')
 
-res=grantIntegrationToRole(cur,spcs_integration,spcs_role)
-print(f'''Grant INTEGRATION TO ROLE {res["status"].iloc[0]}''')
+    ret=waitForEnpoints(cur,spcs_service)
+    print(ret)
+if type=='update':
+    print(f'''Updating SERVICE {spcs_service}...''')
 
-res=createStage(cur,spcs_db,spcs_sc,spcs_st)
-print(f'''Create STAGE {res["status"].iloc[0]}''')
+    connect(spcs_usr,spcs_usr_pass,account,spcs_role)
 
-res=createRepo(cur,spcs_db,spcs_sc,spcs_repo)
-print(f'''Create IMAGE REPOSITORY {res["status"].iloc[0]}''')
+    res=setContext(cur,spcs_db,spcs_sc)
+    print(f'''Set Context {res["status"].iloc[0]}''')
 
-res=transferOwner(cur,'DATABASE',spcs_db,spcs_role)
-print(f'''Transfering DB ownership {res["status"].iloc[0]}''')
+    res=getRegistry(cur,spcs_db+'.'+spcs_sc,spcs_repo)
+    spcs_url=res["repository_url"].iloc[0]
+    print(f'''Getting Repository URL {spcs_url}''')
 
-res=transferOwner(cur,'SCHEMA',spcs_db+"."+spcs_sc,spcs_role)
-print(f'''Transfering SCHEMA ownership {res["status"].iloc[0]}''')
+    loginDocker(spcs_url,spcs_usr,spcs_usr_pass)
+    for img in spcs_docker_images:   
+        tagImage(spcs_url,img)
+        pushImage(spcs_url,img)
+        
+    ret=readYaml(spcs_yaml_file)
+    spcs_yaml_content=completeSpecImageName(ret,spcs_url,spcs_docker_images)
+    print(f'''Qualifying Image name in YAML file...''')
 
-res=transferOwner(cur,'STAGE',spcs_db+"."+spcs_sc+"."+spcs_st,spcs_role)
-print(f'''Transfering STAGE ownership {res["status"].iloc[0]}''')
+    res=alterServiceFromSpec(cur,spcs_service,spcs_yaml_content)
+    print(f'''ALTER SERVICE {res["status"].iloc[0]}''')
 
-res=transferOwner(cur,'IMAGE REPOSITORY',spcs_db+"."+spcs_sc+"."+spcs_repo,spcs_role)
-print(f'''Transfering IMAGE REPOSITORY ownership {res["status"].iloc[0]}''')
-
-res=createComputePool(cur,spcs_pool)
-print(f'''Create COMPUTE POOL {res["status"].iloc[0]}''')
-
-res=grantPoolToRole(cur,spcs_pool,spcs_role)
-print(f'''GRANT POOL USAGE TO ROLE {res["status"].iloc[0]}''')
-
-disconnect()
-
-print(f'''Switching USER connection...''')
-
-connect(spcs_usr,spcs_usr_pass,account,spcs_role)
-
-res=setContext(cur,spcs_db,spcs_sc)
-print(f'''Set Context {res["status"].iloc[0]}''')
-
-res=upload(cur,spcs_yaml_file,spcs_st)
-print(f'''Uploading YAML...''')
-
-res=getRegistry(cur,spcs_db+'.'+spcs_sc,spcs_repo)
-spcs_url=res["repository_url"].iloc[0]
-print(f'''Getting Repository URL {spcs_url}''')
-
-loginDocker(spcs_url,spcs_usr,spcs_usr_pass)
-tagImage(spcs_url,spcs_docker_image)
-pushImage(spcs_url,spcs_docker_image)
-
-ret=readYaml(spcs_yaml_file)
-spcs_yaml_content=completeSpecImageName(ret,spcs_url)
-print(f'''Qualifying Image name in YAML file...''')
-
-res=createServiceFromSpec(cur,spcs_service,spcs_pool,spcs_integration,spcs_yaml_content)
-print(f'''Create SERVICE {res["status"].iloc[0]}''')
-
-ret=waitForEnpoints(cur,spcs_service)
-print(ret)
+    ret=waitForEnpoints(cur,spcs_service)
+    print(ret)
+    disconnect()    
 

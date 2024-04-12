@@ -1,0 +1,8 @@
+spec:
+  containers:
+  - name: mkp
+    image: mkp
+  endpoints:
+  - name: mkp
+    port: 5001 
+    public: true

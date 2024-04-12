@@ -24,15 +24,19 @@ It creates all the necessary elements in a fresh Snowflake account so you can fo
 
 - Modify the AccountAdmin credentials and account name
 
-- Choose a password for the new user
+- Choose a password for the new SCPCS user, user name is hardcoded: test_spcs_usr, chenge it directly in the code if needed
 
-- In main.py, point to your yaml definition file (line 250):
+- In main.py, add the prefix for all Snowflake Object creation (line 10):
+
+    app='GRAFANA'
+
+- In main.py, point to your yaml definition file (line 11):
 
     spcs_yaml_file='yaml/sample_grafana.yaml'
 
-- point to the docker local image name (line 251)
+- point to the docker local image(s) name (line 12)
 
-    spcs_docker_image='grafana/grafana'
+    spcs_docker_image=['grafana/grafana']
 
   
 
@@ -40,11 +44,15 @@ It creates all the necessary elements in a fresh Snowflake account so you can fo
 
 - pip install - r requirements.txt
 
-- python main.py
+- python main.py init 
 
 - when enpoint is ready you can navigate to the url and login with the 'test_spcs_usr" user name and choosen password:
 
 ![](img/sc1.png)
+
+If you udpate your code, rebuild your docker image and run:
+
+- python main.py update 
 
 ## What the script does for you?
 

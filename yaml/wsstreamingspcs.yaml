@@ -1,0 +1,10 @@
+spec:
+  container:
+  - name: wsstreamingspcs
+    image: wsstreamingspcs
+  endpoint:
+  - name: ui
+    port: 8080
+    public: true
+
+

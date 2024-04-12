@@ -1,0 +1,10 @@
+spec:
+  containers:
+  - name: jupyter
+    image: alteirac/jupyter
+  endpoints:
+  - name: ui
+    port: 8889
+    public: true
+
+

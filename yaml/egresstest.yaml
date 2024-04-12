@@ -1,0 +1,8 @@
+spec:
+  containers:
+  - name: egresstest
+    image: egresstest
+  endpoints:
+  - name: egresstest
+    port: 5001 
+    public: true

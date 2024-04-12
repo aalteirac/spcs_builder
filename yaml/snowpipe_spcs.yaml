@@ -1,0 +1,8 @@
+spec:
+  container:
+  - name: alteiracstreaming
+    image: alteirac/streaming
+  endpoint:
+  - name: ui
+    port: 8101
+    public: true

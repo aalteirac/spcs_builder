@@ -24,7 +24,14 @@ It creates all the necessary elements in a fresh Snowflake account so you can fo
 
 - Modify the AccountAdmin credentials and account name
 
-- Choose a password for the new SCPCS user, user name is hardcoded: test_spcs_usr, chenge it directly in the code if needed
+    ```
+    accountname='locator.region' # like HG792929.eu-central-1
+    adminuser='user'
+    adminpass='pass'
+    spcs_user_pass='pass'
+    ```
+
+- Choose a password for the new SCPCS user, user name is hardcoded: test_spcs_usr, change it directly in the code if needed (line 283)
 
 - In main.py, add the prefix for all Snowflake Object creation (line 10):
 
